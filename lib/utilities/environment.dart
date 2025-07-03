@@ -10,7 +10,7 @@ class Environment {
       // You can set this during build: flutter build web --dart-define=API_KEY=your_key
       return const String.fromEnvironment(
         'API_KEY',
-        defaultValue: '4ab244dbb64533a71879e35e8017c667', // Your actual key for web
+        defaultValue: '4ab244dbb64533a71879e35e8017c667', // Your actual API key for web
       );
     } else {
       // For mobile/desktop, this will be loaded from .env file
