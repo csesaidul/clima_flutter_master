@@ -3,16 +3,29 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
 import 'networking.dart';
 import 'location.dart';
-
-// Get API key from environment variables
-final String apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
-final String openWeatherMapURL = dotenv.env['OPENWEATHER_BASE_URL'] ??
-    "https://api.openweathermap.org/data/2.5/weather";
+import '../utilities/environment.dart';
 
 class WeatherModel {
   Position? currentPosition;
 
   LocationServices locationService = LocationServices();
+
+  // Initialize environment configuration
+  WeatherModel() {
+    _initializeConfig();
+  }
+
+  void _initializeConfig() {
+    if (!kIsWeb) {
+      // For mobile/desktop, get values from .env file
+      final apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '4ab244dbb64533a71879e35e8017c667';
+      final baseUrl = dotenv.env['OPENWEATHER_BASE_URL'] ??
+          'https://api.openweathermap.org/data/2.5/weather';
+
+      Environment.setMobileConfig(apiKey: apiKey, baseUrl: baseUrl);
+    }
+    // For web, Environment class will use compile-time constants
+  }
 
   Future<dynamic> getCityWeather(String cityName) async {
     var _weatherData;
@@ -21,18 +34,17 @@ class WeatherModel {
       print('Starting city weather request for: $cityName');
     }
 
-    // Construct the URL with the city name
+    // Construct the URL with the city name using Environment class
     var url = Uri.parse(
-      '$openWeatherMapURL?q=$cityName&appid=$apiKey&units=metric',
+      '${Environment.baseUrl}?q=$cityName&appid=${Environment.apiKey}&units=metric',
     );
 
     if (kDebugMode) {
       print('API URL: $url');
-      print('API Key: $apiKey');
+      print('Platform: ${kIsWeb ? "Web" : "Mobile"}');
       print('Making weather API request...');
     }
 
-    // _weatherData = await NetworkHelper.getData(url);
     var networkHelper = NetworkHelper(url.toString());
     _weatherData = await networkHelper.getData();
 
@@ -68,18 +80,17 @@ class WeatherModel {
       );
     }
 
-    /// Call getData() AFTER location is obtained
+    /// Call getData() AFTER location is obtained using Environment class
     var url = Uri.parse(
-      '$openWeatherMapURL?lat=${currentPosition!.latitude}&lon=${currentPosition!.longitude}&appid=$apiKey&units=metric',
+      '${Environment.baseUrl}?lat=${currentPosition!.latitude}&lon=${currentPosition!.longitude}&appid=${Environment.apiKey}&units=metric',
     );
 
     if (kDebugMode) {
       print('API URL: $url');
-      print('API Key: $apiKey');
+      print('Platform: ${kIsWeb ? "Web" : "Mobile"}');
       print('Making weather API request...');
     }
 
-    // _weatherData = await NetworkHelper.getData(url);
     var networkHelper = NetworkHelper(url.toString());
     _weatherData = await networkHelper.getData();
 
