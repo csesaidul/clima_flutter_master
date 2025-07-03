@@ -43,6 +43,6 @@ class Environment {
 
   /// Validates that API key is available
   static bool get isConfigured {
-    return apiKey.isNotEmpty && apiKey != 'your_api_key_here';
+    return apiKey.isNotEmpty && apiKey.length > 10; // Basic API key format validation
   }
 }
