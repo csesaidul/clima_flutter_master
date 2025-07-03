@@ -12,6 +12,7 @@ class CityScreen extends StatefulWidget {
 
 class _CityScreenState extends State<CityScreen> {
   String cityName = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,6 +39,7 @@ class _CityScreenState extends State<CityScreen> {
                   child: Icon(
                     Icons.arrow_back_ios,
                     size: 50.0,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -47,25 +49,33 @@ class _CityScreenState extends State<CityScreen> {
                   decoration: kTextFieldInputDecoration,
                   style: TextStyle(fontSize: 18.0, color: Colors.black),
                   onChanged: (value) {
-                    // Handle text input changes
-                    cityName = value;
+                    setState(() {
+                      cityName = value.trim(); // Trim whitespace
+                    });
                   },
-                  ),
+                  onSubmitted: (value) {
+                    // Allow Enter key to submit
+                    if (value.trim().isNotEmpty) {
+                      Navigator.pop(context, value.trim());
+                    }
+                  },
                 ),
+              ),
               SizedBox(height: 20.0),
               TextButton(
-                onPressed: () {
-                  // Handle the button press to get weather for the entered city
+                onPressed: cityName.isEmpty ? null : () {
+                  // Only allow submission if city name is not empty
                   if (kDebugMode) {
                     print('Get Weather button pressed for city: $cityName');
                   }
 
-                  // Return city name to previous screen (this should always execute)
                   Navigator.pop(context, cityName);
                 },
                 child: Text(
                   'Get Weather',
-                  style: kButtonTextStyle,
+                  style: kButtonTextStyle.copyWith(
+                    color: cityName.isEmpty ? Colors.grey : Colors.white,
+                  ),
                 ),
               ),
             ],

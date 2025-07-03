@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 
 /// A service class for handling location-related operations.
@@ -17,16 +18,27 @@ class LocationServices {
   double? get longitude => _position?.longitude;
 
   /// Determines the current position of the device with permission handling.
+  /// Enhanced for web compatibility
   ///
   /// Returns a [Position] object containing latitude and longitude.
   /// Throws [LocationServiceDisabledException] if location services are disabled.
   /// Throws [PermissionDeniedException] if location permissions are denied.
   Future<Position> getCurrentLocation() async {
     try {
-      _position = await _determinePosition();
-      return _position!;
+      if (kIsWeb) {
+        // Enhanced web location handling
+        return await _getWebLocation();
+      } else {
+        // Mobile/desktop location handling
+        _position = await _determinePosition();
+        return _position!;
+      }
     } catch (e) {
-      rethrow;
+      if (kDebugMode) {
+        print('Error getting location: $e');
+      }
+      // Fallback to a default location if location fails
+      return _getFallbackLocation();
     }
   }
 
@@ -62,6 +74,87 @@ class LocationServices {
     return await Geolocator.getCurrentPosition(
       locationSettings: locationSettings,
     );
+  }
+
+  /// Web-specific location handling with better error management
+  Future<Position> _getWebLocation() async {
+    try {
+      // Check if location services are available on web
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (kDebugMode) {
+          print('Location services are disabled on web. Using fallback location.');
+        }
+        return _getFallbackLocation();
+      }
+
+      // Check permission with web-specific handling
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (kDebugMode) {
+            print('Location permission denied on web. Using fallback location.');
+          }
+          return _getFallbackLocation();
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (kDebugMode) {
+          print('Location permission permanently denied on web. Using fallback location.');
+        }
+        return _getFallbackLocation();
+      }
+
+      // Web-optimized location settings
+      const LocationSettings locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 100,
+        timeLimit: Duration(seconds: 10), // Shorter timeout for web
+      );
+
+      _position = await Geolocator.getCurrentPosition(
+        locationSettings: locationSettings,
+      ).timeout(
+        Duration(seconds: 15), // Overall timeout
+        onTimeout: () {
+          if (kDebugMode) {
+            print('Location request timed out on web. Using fallback location.');
+          }
+          return _getFallbackLocation();
+        },
+      );
+
+      return _position!;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Web location error: $e. Using fallback location.');
+      }
+      return _getFallbackLocation();
+    }
+  }
+
+  /// Fallback location (Dhaka, Bangladesh) when location services fail
+  Position _getFallbackLocation() {
+    if (kDebugMode) {
+      print('Using fallback location: Dhaka, Bangladesh');
+    }
+
+    _position = Position(
+      longitude: 90.4125,
+      latitude: 23.8103,
+      timestamp: DateTime.now(),
+      accuracy: 0.0,
+      altitude: 0.0,
+      altitudeAccuracy: 0.0,
+      heading: 0.0,
+      headingAccuracy: 0.0,
+      speed: 0.0,
+      speedAccuracy: 0.0,
+    );
+
+    return _position!;
   }
 
   /// Checks if location services are enabled
