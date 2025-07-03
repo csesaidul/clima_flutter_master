@@ -7,7 +7,6 @@ import '../utilities/environment.dart';
 
 class WeatherModel {
   Position? currentPosition;
-
   LocationServices locationService = LocationServices();
 
   // Initialize environment configuration
@@ -27,87 +26,145 @@ class WeatherModel {
     // For web, Environment class will use compile-time constants
   }
 
-  Future<dynamic> getCityWeather(String cityName) async {
-    var _weatherData;
+  /// Get detailed weather data including current, forecast, and astronomy
+  Future<Map<String, dynamic>> getDetailedWeatherData({
+    double? lat,
+    double? lon,
+    String? cityName,
+  }) async {
+    try {
+      late double latitude, longitude;
 
-    if (kDebugMode) {
-      print('Starting city weather request for: $cityName');
+      if (lat != null && lon != null) {
+        latitude = lat;
+        longitude = lon;
+      } else if (cityName != null && cityName.isNotEmpty) {
+        // Get coordinates from city name using geocoding
+        var geocodeData = await _getCoordinatesFromCity(cityName);
+        latitude = geocodeData['lat'];
+        longitude = geocodeData['lon'];
+      } else {
+        // Use current location
+        currentPosition = await locationService.getCurrentLocation();
+        latitude = currentPosition!.latitude;
+        longitude = currentPosition!.longitude;
+      }
+
+      // Fetch all weather data concurrently
+      final futures = await Future.wait([
+        _getCurrentWeather(latitude, longitude),
+        _getForecastWeather(latitude, longitude),
+        _getAstronomyData(latitude, longitude),
+      ]);
+
+      return {
+        'current': futures[0],
+        'forecast': futures[1],
+        'astronomy': futures[2],
+        'coordinates': {'lat': latitude, 'lon': longitude},
+      };
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting detailed weather data: $e');
+      }
+      rethrow;
     }
+  }
 
-    // Construct the URL with the city name using Environment class
+  /// Get coordinates from city name
+  Future<Map<String, dynamic>> _getCoordinatesFromCity(String cityName) async {
     var url = Uri.parse(
-      '${Environment.baseUrl}?q=$cityName&appid=${Environment.apiKey}&units=metric',
+      'https://api.openweathermap.org/geo/1.0/direct?q=$cityName&limit=1&appid=${Environment.apiKey}',
     );
 
-    if (kDebugMode) {
-      print('API URL: $url');
-      print('Platform: ${kIsWeb ? "Web" : "Mobile"}');
-      print('Making weather API request...');
+    var networkHelper = NetworkHelper(url.toString());
+    var data = await networkHelper.getData();
+
+    if (data != null && data.isNotEmpty) {
+      return {
+        'lat': data[0]['lat'],
+        'lon': data[0]['lon'],
+        'name': data[0]['name'],
+        'country': data[0]['country'],
+      };
+    } else {
+      throw Exception('City not found: $cityName');
     }
+  }
+
+  /// Get current weather data
+  Future<dynamic> _getCurrentWeather(double lat, double lon) async {
+    var url = Uri.parse(
+      '${Environment.baseUrl}?lat=$lat&lon=$lon&appid=${Environment.apiKey}&units=metric',
+    );
 
     var networkHelper = NetworkHelper(url.toString());
-    _weatherData = await networkHelper.getData();
+    return await networkHelper.getData();
+  }
 
-    if (kDebugMode) {
-      print('Weather data received successfully: $_weatherData');
-      // Print specific weather details if available
-      if (_weatherData != null) {
-        print('City: ${_weatherData['name'] ?? 'Unknown'}');
-        print('Temperature: ${_weatherData['main']?['temp'] ?? 'Unknown'}°C');
-        print('Weather: ${_weatherData['weather']?[0]?['main'] ?? 'Unknown'}');
-        print(
-          'Description: ${_weatherData['weather']?[0]?['description'] ?? 'Unknown'}',
-        );
-      }
+  /// Get 5-day forecast data
+  Future<dynamic> _getForecastWeather(double lat, double lon) async {
+    var url = Uri.parse(
+      'https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=${Environment.apiKey}&units=metric',
+    );
+
+    var networkHelper = NetworkHelper(url.toString());
+    return await networkHelper.getData();
+  }
+
+  /// Get astronomy data (sunrise, sunset, moon phase)
+  Future<Map<String, dynamic>> _getAstronomyData(double lat, double lon) async {
+    // Using the current weather data which includes sunrise/sunset
+    var currentWeather = await _getCurrentWeather(lat, lon);
+
+    return {
+      'sunrise': currentWeather['sys']['sunrise'],
+      'sunset': currentWeather['sys']['sunset'],
+      'timezone': currentWeather['timezone'],
+      // Moon phase calculation (simplified)
+      'moonPhase': _calculateMoonPhase(),
+    };
+  }
+
+  /// Calculate current moon phase
+  String _calculateMoonPhase() {
+    final now = DateTime.now();
+    final year = now.year;
+    final month = now.month;
+    final day = now.day;
+
+    // Simplified moon phase calculation
+    final totalDays = (year - 2000) * 365.25 + (month - 1) * 30.44 + day;
+    final moonCycle = totalDays % 29.53;
+
+    if (moonCycle < 1.84566) return '🌑'; // New Moon
+    if (moonCycle < 5.53699) return '🌒'; // Waxing Crescent
+    if (moonCycle < 9.22831) return '🌓'; // First Quarter
+    if (moonCycle < 12.91963) return '🌔'; // Waxing Gibbous
+    if (moonCycle < 16.61096) return '🌕'; // Full Moon
+    if (moonCycle < 20.30228) return '🌖'; // Waning Gibbous
+    if (moonCycle < 23.99361) return '🌗'; // Last Quarter
+    if (moonCycle < 27.68493) return '🌘'; // Waning Crescent
+    return '🌑'; // New Moon
+  }
+
+  // Legacy methods for backward compatibility
+  Future<dynamic> getCityWeather(String cityName) async {
+    try {
+      var detailedData = await getDetailedWeatherData(cityName: cityName);
+      return detailedData['current'];
+    } catch (e) {
+      rethrow;
     }
-
-    return _weatherData;
   }
 
   Future<dynamic> getLocationWeather() async {
-    var _weatherData;
-
-    if (kDebugMode) {
-      print('Starting location request...');
+    try {
+      var detailedData = await getDetailedWeatherData();
+      return detailedData['current'];
+    } catch (e) {
+      rethrow;
     }
-
-    // Request current location
-    currentPosition = await locationService.getCurrentLocation();
-
-    if (kDebugMode) {
-      print(
-        'Location obtained: Lat=${currentPosition!.latitude}, Lon=${currentPosition!.longitude}',
-      );
-    }
-
-    /// Call getData() AFTER location is obtained using Environment class
-    var url = Uri.parse(
-      '${Environment.baseUrl}?lat=${currentPosition!.latitude}&lon=${currentPosition!.longitude}&appid=${Environment.apiKey}&units=metric',
-    );
-
-    if (kDebugMode) {
-      print('API URL: $url');
-      print('Platform: ${kIsWeb ? "Web" : "Mobile"}');
-      print('Making weather API request...');
-    }
-
-    var networkHelper = NetworkHelper(url.toString());
-    _weatherData = await networkHelper.getData();
-
-    if (kDebugMode) {
-      print('Weather data received successfully: $_weatherData');
-      // Print specific weather details if available
-      if (_weatherData != null) {
-        print('City: ${_weatherData['name'] ?? 'Unknown'}');
-        print('Temperature: ${_weatherData['main']?['temp'] ?? 'Unknown'}°C');
-        print('Weather: ${_weatherData['weather']?[0]?['main'] ?? 'Unknown'}');
-        print(
-          'Description: ${_weatherData['weather']?[0]?['description'] ?? 'Unknown'}',
-        );
-      }
-    }
-
-    return _weatherData;
   }
 
   String getWeatherIcon(int condition) {
