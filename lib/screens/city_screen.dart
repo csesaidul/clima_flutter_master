@@ -57,10 +57,11 @@ class _CityScreenState extends State<CityScreen> {
                 onPressed: () {
                   // Handle the button press to get weather for the entered city
                   if (kDebugMode) {
-                    print('Get Weather button pressed');
-                    Navigator.pop(context, cityName);
+                    print('Get Weather button pressed for city: $cityName');
                   }
-                  // You can add functionality to fetch weather data here
+
+                  // Return city name to previous screen (this should always execute)
+                  Navigator.pop(context, cityName);
                 },
                 child: Text(
                   'Get Weather',
