@@ -2,7 +2,6 @@
 
 A beautiful and functional weather application built with Flutter that provides real-time weather information based on your current location or any city worldwide.
 
-![Finished App](https://github.com/londonappbrewery/Images/blob/master/clima-demo.gif)
 
 ## ✨ Features
 
