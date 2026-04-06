@@ -65,14 +65,6 @@ A beautiful and functional weather application built with Flutter that provides 
 4. Generate a new API key
 5. Copy the key to your `.env` file
 
-### Environment Variables
-
-This project uses `flutter_dotenv` for secure API key management:
-
-- **`.env`** - Your actual API keys (never commit this file)
-- **`.env.example`** - Template file for other developers
-- **`.gitignore`** - Ensures `.env` files are not committed to version control
-
 ## 🏗️ Project Structure
 
 ```
@@ -146,52 +138,6 @@ Temperature-based clothing suggestions:
 - Below 10°C: "You'll need 🧣 and 🧤"
 - 10-20°C: "Bring a 🧥 just in case"
 
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **API Key Not Working**
-   - Verify your API key is correct in `.env` file
-   - Ensure your OpenWeatherMap account is activated
-   - Check if you've exceeded API rate limits
-
-2. **Location Permission Denied**
-   - Enable location services in device settings
-   - Grant location permission to the app
-   - Try searching for a city manually
-
-3. **Build Errors**
-   - Run `flutter clean && flutter pub get`
-   - Check Flutter and Dart SDK versions
-   - Verify all dependencies are properly installed
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Copy `.env.example` to `.env` and add your API key
-4. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-5. Push to the branch (`git push origin feature/AmazingFeature`)
-6. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🎓 Learning Objectives
-
-This project demonstrates:
-
-- **Asynchronous Programming** - Using async/await and Futures
-- **HTTP Networking** - Making API calls and handling responses
-- **JSON Parsing** - Converting API responses to Dart objects
-- **State Management** - Managing app state with StatefulWidget
-- **Navigation** - Passing data between screens
-- **Location Services** - Getting device GPS coordinates
-- **Error Handling** - Proper exception handling with try/catch
-- **Security** - Secure API key management
-- **UI/UX Design** - Creating beautiful and functional interfaces
-
 ## 🔗 Resources
 
 - [Flutter Documentation](https://flutter.dev/docs)
@@ -203,7 +149,7 @@ This project demonstrates:
 ## 📞 Support
 
 If you encounter any issues or have questions:
-1. Check the [Issues](https://github.com/your-username/clima_flutter_master/issues) section
+1. Check the [Issues](https://github.com/csesaidul/clima_flutter_master/issues) section
 2. Create a new issue with detailed information
 3. Include error logs and steps to reproduce
 
